@@ -26,44 +26,87 @@ class ExpressionTreeNode {
 	this.symbol = symbol;
 	this.left = this.right = null;
     }
+    
+    public String toString(){
+	return breadFirstSearch(this);
+    }
+    public static String breadFirstSearch(ExpressionTreeNode root){
+	StringBuilder sb = new StringBuilder();
+	sb.append("{");
+	ExpressionTreeNode node = null;
+	Stack<ExpressionTreeNode> stack = new Stack<ExpressionTreeNode>();
+	stack.push(root);
+	sb.append(root.symbol);
+	while(!stack.empty()){
+	     node = stack.pop();
+	     if(node.hasChildren()){
+		 appendNode(sb, stack, node.left);
+		 appendNode(sb, stack, node.right);
+	     }
+	}
+	sb.append("}");
+	return sb.toString();
+    }
+
+    private static void appendNode(StringBuilder sb, Stack<ExpressionTreeNode> stack, ExpressionTreeNode node) {
+	if(node == null){
+	    sb.append(",#");
+	} else{
+	    sb.append(","+node.symbol);
+	    stack.push(node);
+	}
+	
+    }
+
+    private boolean hasChildren() {
+	return this.left!= null || this.right!=null;
+    }
 }
 
 public class ExpressionTree {
     // public class Solution {
     static String [] calcSymbols = {"+","-","*","/"};
+    Stack<ExpressionTreeNode> nodes = new Stack<ExpressionTreeNode>();
+    Stack<String> operators = new Stack<String>();
     /**
      * @param expression:
      *            A string array
      * @return: The root of expression tree
      */
     public ExpressionTreeNode build(String[] expression) {
-	// write your code here
-	boolean leftBrackt = false;
-	Stack<ExpressionTreeNode> nodes = new Stack<ExpressionTreeNode>();
-	Stack<String> operators = new Stack<String>();
+
 	for(String exp:expression){
-	    if(exp =="("){ leftBrackt = true;
-	    } else if(exp ==")"){
-		//right bracket, merge node.
-		ExpressionTreeNode root = new ExpressionTreeNode(operators.pop());
-		root.right = nodes.pop();
-		root.left = nodes.pop();
-		nodes.push(root);
-		//clear leftbracket flag
-		leftBrackt = false;
+	    if(exp.trim().equals("(")){ 
+		//
+		operators.push(exp);
+	    } else if(exp.equals(")")){
+		while(!operators.peek().equals("(")){
+    		//right bracket, merge node. until reaches left bracket
+    		ExpressionTreeNode root = new ExpressionTreeNode(operators.pop());
+    		root.right = nodes.pop();
+    		root.left = nodes.pop();
+    		nodes.push(root);
+		}
+		operators.pop();//pop the left bracket
 	    } else if(isOperator(exp)){
 		//do the operator
-		if(!isHighPrioOperator(exp)){//low prio
-		    //check whether pervious operator is high prio
-		    if(!leftBrackt && !operators.isEmpty() ){ //&& isHighPrioOperator(operators.peek())){
-			//merge node.
+		//if exp = lowPrio, merge node until empty or left bracket
+		//if exp = high prior, & pre = high prior, merge node
+		if(!isHighPrioOperator(exp)){
+		    while(!operators.isEmpty() && !operators.peek().equals("(")){
 			ExpressionTreeNode root = new ExpressionTreeNode(operators.pop());
 			root.right = nodes.pop();
 			root.left = nodes.pop();
 			nodes.push(root);
-		    } 
-		    
-		}
+		    }
+	    	} else {
+	    	    if(!operators.isEmpty() && isHighPrioOperator(operators.peek())){
+	    		ExpressionTreeNode root = new ExpressionTreeNode(operators.pop());
+			root.right = nodes.pop();
+			root.left = nodes.pop();
+			nodes.push(root);
+	    	    }
+	    	}
 		//push me
 		operators.push(exp);
 	    } else { //! (, ), +-*/
@@ -71,6 +114,7 @@ public class ExpressionTree {
 		nodes.push(new ExpressionTreeNode(exp));
 	    }
 	}
+	
 	
 	//after reading input
 	while(!operators.isEmpty()){
@@ -80,6 +124,9 @@ public class ExpressionTree {
         		nodes.push(root);
 	}
 	
+	if(nodes.isEmpty()){
+	    return null;
+	}
 	return nodes.pop();
 	
     }
